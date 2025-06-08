@@ -4,7 +4,7 @@ from pyproj import Transformer
 import time
 
 # ---- constants ---------------------------------------------------
-TARGET_ZOOM_LEVELS = [27,28,29]
+TARGET_ZOOM_LEVELS = [27,28,29,30]
 
 SIZE = {
     "person": (0.5, 1.7, 0.5),   # (width, height, depth) in meters

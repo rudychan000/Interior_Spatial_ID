@@ -49,11 +49,11 @@ def detect_objects(capture, model):
     Detect objects in the given capture using YOLO.
     """
     rgb = cv2.cvtColor(capture.color, cv2.COLOR_BGRA2RGB)
-    current_time = time.time()
+    #current_time = time.time()
     points = capture.transformed_depth_point_cloud
     xyz_m = points.astype(np.float32) / 1000.0
 
-    print(f"Point cloud extraction time: {time.time() - current_time:.3f} seconds")
+    #print(f"Point cloud extraction time: {time.time() - current_time:.3f} seconds")
     # YOLO detection on RGB
     preds = model(rgb, verbose=False)[0]
     H, W = rgb.shape[:2]
