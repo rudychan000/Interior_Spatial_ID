@@ -9,7 +9,7 @@ import numpy as np
 import cv2
 from pyproj import Transformer
 from pyapriltags import Detector
-from pyk4a import PyK4A, Config, ColorResolution, DepthMode, CalibrationType
+from pyk4a import FPS, PyK4A, Config, ColorResolution, DepthMode, CalibrationType
 
 # ---- constants ---------------------------------------------------
 TAG_SIZE_M   = 0.172           # physical edge length of the AprilTag [m]
@@ -21,7 +21,8 @@ TAG_YAW_DEG  = 100.0            # yaw of tag +X measured anticlockwise from +E a
 # ---- camera acquisition -------------------------------------------------------
 K4A_CONFIG = Config(                       
     color_resolution=ColorResolution.RES_1536P,
-    depth_mode=DepthMode.NFOV_2X2BINNED
+    depth_mode=DepthMode.NFOV_2X2BINNED,
+    camera_fps=FPS.FPS_30
 )
 # ---- transformer from geodetic to ECEF -----------------------------------
 _T_GEO2ECEF = Transformer.from_crs("EPSG:4979", "EPSG:4978", always_xy=True)

@@ -99,11 +99,11 @@ def main():
                 cv2.putText(rgb_overlay, llh, (x1, y1+120),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,64), 2)
                 objects.append({
-                    "bbox": (x1, y1, x2, y2),
-                    "class_id": int(cls_id),
+                    #"bbox": (x1, y1, x2, y2),
+                    "name": model.names[int(cls_id)],
                     "confidence": conf,
-                    "camera_space": (X, Y, Z),
-                    "ecef_space": (Xt, Yt, Zt),
+                    #"camera_space": (X, Y, Z),
+                    "ecef": (Xt, Yt, Zt),
                     "llh": (lon, lat, alt)
                 })
             cv2.imshow("K4a", cv2.cvtColor(rgb_overlay, cv2.COLOR_RGB2BGR))
