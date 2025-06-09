@@ -43,7 +43,7 @@ def generate_ids_for_objects(objects):
 
         # Generate spatial IDs
         #ids = biuld_ids(llh, bbox_size_m)
-        
+
         # Use corner IDs for better performance
         ids = build_corner_ids(llh, bbox_size_m)
         
@@ -51,6 +51,7 @@ def generate_ids_for_objects(objects):
             "spatial_ids": ids,
             "name": name,
             "confidence": confidence,
+            "llh": llh,
             "timestamp": datetime.datetime.now().isoformat(),
         })
     return objects_with_ids

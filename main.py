@@ -1,9 +1,8 @@
-from calendar import c
 import json
 import numpy as np
 from ultralytics import YOLO
 import pyk4a
-from pyk4a import FPS, Config, PyK4A
+from pyk4a import FPS, CalibrationType, Config, PyK4A
 from pyproj import Transformer
 import cv2
 from spatialID import generate_ids_for_objects
@@ -44,19 +43,18 @@ def xyz_to_ecef(xyz):
     return ecef_h[:3].T  # Return only the first three rows (x, y, z)
 
 
-def detect_objects(capture, model):
+def detect_objects(capture, model, k4a):
     """
     Detect objects in the given capture using YOLO.
     """
     rgb = cv2.cvtColor(capture.color, cv2.COLOR_BGRA2RGB)
     #current_time = time.time()
-    points = capture.transformed_depth_point_cloud
-    xyz_m = points.astype(np.float32) / 1000.0
+    depth = capture.transformed_depth  # depth aligned to color image
+    H, W = rgb.shape[:2]
 
     #print(f"Point cloud extraction time: {time.time() - current_time:.3f} seconds")
     # YOLO detection on RGB
     preds = model(rgb, verbose=False)[0]
-    H, W = rgb.shape[:2]
     objects = []
 
     for xyxy, cls_id, conf in zip(preds.boxes.xyxy,
@@ -68,15 +66,21 @@ def detect_objects(capture, model):
         v_c = np.clip(v_c, 0, H - 1)
         # Extract a small window around the center pixel to find depth
         # This is a 5x5 window centered at (u_c, v_c)
-        win = xyz_m[max(v_c-2,0):v_c+3, max(u_c-2,0):u_c+3]
-        z_win = win[..., 2]
-        mask = z_win > 0
+        win = depth[max(v_c-2, 0):v_c+3, max(u_c-2, 0):u_c+3]
+        mask = win > 0
         if not np.any(mask):
             continue
 
-        idx = np.nanargmin(np.where(mask, z_win, np.nan))
-        r, c = divmod(idx, z_win.shape[1])
-        X, Y, Z = win[r, c]
+        idx = np.nanargmin(np.where(mask, win, np.nan))
+        r, c = divmod(idx, win.shape[1])
+        u_d = np.clip(u_c - 2 + c, 0, W - 1)
+        v_d = np.clip(v_c - 2 + r, 0, H - 1)
+        z_mm = depth[v_d, u_d]
+
+        # Convert 2D to 3D using calibration
+        point3d = k4a.calibration.convert_2d_to_3d(
+            (u_d, v_d), z_mm / 1000.0, CalibrationType.COLOR)  # in meters
+        X, Y, Z = point3d
 
         # Convert to ECEF coordinates
         Xt, Yt, Zt = xyz_to_ecef((X, Y, Z))
@@ -117,7 +121,7 @@ async def main():
                 
                 #current_time = time.time()
 
-                objects = detect_objects(capture, model)
+                objects = detect_objects(capture, model,k4a)
                 if not objects:
                     continue
                 

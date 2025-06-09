@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 import pyk4a
-from pyk4a import Config, PyK4A
+from pyk4a import CalibrationType, Config, PyK4A
 from pyproj import Transformer
 
 # ── configuration ───────────────────────────────────────────────────────────
@@ -33,6 +33,7 @@ def xyz_to_ecef(xyz):
     ecef_h = T_cam2ECEF @ xyz_h.T  # Apply transformation
     return ecef_h[:3].T  # Return only the first three rows (x, y, z)
 
+
 def main():
     k4a = start_camera()
     model = load_model()
@@ -41,6 +42,7 @@ def main():
 
     try:
         while True:
+            """
             capture = k4a.get_capture()
 
             # Check if the capture contains valid color and depth images
@@ -77,6 +79,52 @@ def main():
                 idx = np.nanargmin(np.where(mask, z_win, np.nan))
                 r, c = divmod(idx, z_win.shape[1])
                 X, Y, Z = win[r, c]
+            """
+            capture = k4a.get_capture()
+
+            # Check if the capture contains valid color and depth images
+            if capture.color is None or capture.depth is None:
+                continue
+
+            rgb = cv2.cvtColor(capture.color, cv2.COLOR_BGRA2RGB)
+            depth = capture.transformed_depth  # depth aligned to color image
+            H, W = rgb.shape[:2]
+
+            rgb_overlay = rgb.copy()
+            objects = []
+
+            # Run YOLO detection on RGB
+            preds = model(rgb, verbose=False)[0]
+
+            for xyxy, cls_id, conf in zip(preds.boxes.xyxy,
+                                        preds.boxes.cls,
+                                        preds.boxes.conf):
+                x1, y1, x2, y2 = map(int, xyxy.cpu().numpy())
+                u_c, v_c = (x1 + x2) // 2, (y1 + y2) // 2
+                u_c = np.clip(u_c, 0, W - 1)
+                v_c = np.clip(v_c, 0, H - 1)
+
+                # Extract 5x5 window around center pixel
+                win = depth[max(v_c-2, 0):v_c+3, max(u_c-2, 0):u_c+3]
+                mask = win > 0
+                if not np.any(mask):
+                    # No valid depth — draw red box and label
+                    cv2.rectangle(rgb_overlay, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                    cv2.putText(rgb_overlay, "No depth", (x1, y2 + 15),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+                    continue
+
+                idx = np.nanargmin(np.where(mask, win, np.nan))
+                r, c = divmod(idx, win.shape[1])
+                u_d = np.clip(u_c - 2 + c, 0, W - 1)
+                v_d = np.clip(v_c - 2 + r, 0, H - 1)
+                z_mm = depth[v_d, u_d]
+
+                # Convert 2D to 3D using calibration
+                point3d = k4a.calibration.convert_2d_to_3d(
+                    (u_d, v_d), z_mm / 1000.0, CalibrationType.COLOR)  # in meters
+
+                X, Y, Z = point3d
 
                 # Convert to ECEF coordinates
                 ecef_coords = xyz_to_ecef((X, Y, Z))
