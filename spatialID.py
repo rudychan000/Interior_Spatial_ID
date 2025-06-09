@@ -1,10 +1,12 @@
+import datetime
 import math
 import re
+from unittest import result
 from pyproj import Transformer
 import time
 
 # ---- constants ---------------------------------------------------
-TARGET_ZOOM_LEVELS = [27,28,29,30]
+TARGET_ZOOM_LEVELS = [25,26,27,28]
 
 SIZE = {
     "person": (0.5, 1.7, 0.5),   # (width, height, depth) in meters
@@ -40,15 +42,18 @@ def generate_ids_for_objects(objects):
         bbox_size_m = (size[0], size[2], size[1])  # (width, depth, height)
 
         # Generate spatial IDs
-        ids = biuld_ids(llh, bbox_size_m)
+        #ids = biuld_ids(llh, bbox_size_m)
+        
+        # Use corner IDs for better performance
+        ids = build_corner_ids(llh, bbox_size_m)
         
         objects_with_ids.append({
             "spatial_ids": ids,
             "name": name,
-            "confidence": confidence
+            "confidence": confidence,
+            "timestamp": datetime.datetime.now().isoformat(),
         })
     return objects_with_ids
-
 
 def lon_to_x(lon: float, zoom: int) -> int:
     """
@@ -158,3 +163,30 @@ def biuld_ids(llh, bbox_size):
         })
     return result
         
+def build_corner_ids(llh, bbox_size):
+    """
+    Build spatial IDs for the corners of the bounding box.
+    """
+    """ Use approximate bounding box calculation for performance."""
+    bbox_min, bbox_max = get_approximate_bbox_minmax(llh, bbox_size)
+    
+    result = []
+
+    for zoom in TARGET_ZOOM_LEVELS:
+        
+        x_start = lon_to_x(bbox_min[0], zoom)
+        x_end = lon_to_x(bbox_max[0], zoom)
+
+        # In Web Mercator the Y axis increases southward, so use maxLat -> minLat.
+        y_start = lat_to_y(bbox_max[1], zoom)
+        y_end = lat_to_y(bbox_min[1], zoom)
+
+        f_start = alt_to_f(bbox_min[2], zoom)
+        f_end = alt_to_f(bbox_max[2], zoom)
+
+        result.append({
+            "zoom": zoom,
+            "min_corner": f"{zoom}/{x_start}/{y_start}/{f_start}",
+            "max_corner": f"{zoom}/{x_end}/{y_end}/{f_end}"
+        })
+    return result

@@ -86,7 +86,7 @@ def detect_objects(capture, model):
         objects.append({
             #"bbox": (x1, y1, x2, y2),
             "name": model.names[int(cls_id)],
-            "confidence": conf.item(),
+            "confidence": f"{conf.item():.2f}",
             #"camera_space": (X, Y, Z),
             "ecef": (Xt, Yt, Zt),
             "llh": (lon, lat, alt)
