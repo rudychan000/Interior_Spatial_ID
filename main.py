@@ -139,6 +139,11 @@ async def main():
 
                 json_data = json.dumps(objects_with_ids)
 
+                if frame_count == 25:
+                    # save json data to file
+                    with open("data.json", "w") as f:
+                        f.write(json_data)
+
                 # Send without blocking
                 await websocket.send(json_data)
 

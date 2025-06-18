@@ -12,11 +12,11 @@ from pyapriltags import Detector
 from pyk4a import FPS, PyK4A, Config, ColorResolution, DepthMode, CalibrationType
 
 # ---- constants ---------------------------------------------------
-TAG_SIZE_M   = 0.172           # physical edge length of the AprilTag [m]
-TAG_LAT_DEG  = 35.0    # latitude  (WGS-84) [°]
-TAG_LON_DEG  = 139.0      # longitude (WGS-84) [°]
+TAG_SIZE_M   = 0.116           # physical edge length of the AprilTag [m]
+TAG_LAT_DEG  = 34.675675   # latitude  (WGS-84) [°]
+TAG_LON_DEG  = 135.503916      # longitude (WGS-84) [°]
 TAG_ALT_M    = 14.0            # ellipsoidal height [m]
-TAG_YAW_DEG  = 100.0            # yaw of tag +X measured anticlockwise from +E axis
+TAG_YAW_DEG  = 0.0            # yaw of tag +X(Right to the tag) measured anticlockwise from +E axis
 
 # ---- camera acquisition -------------------------------------------------------
 K4A_CONFIG = Config(                       
