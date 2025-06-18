@@ -14,3 +14,7 @@
 ### Run the Service
 
 1. Run **`main.py`**.
+
+### For Debug
+
+1. Run **`stream.py`**.
